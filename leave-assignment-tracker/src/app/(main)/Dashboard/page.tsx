@@ -102,7 +102,7 @@ const Dashboard = () => {
           )}
           
           {user?.role === "STUDENT" && (
-            <Button className=""  onClick={() => redirect("/Leave-requests/create")}>
+            <Button className=""  onClick={() => redirect("CreateLeaveRequest")}>
               <PlusIcon size={16} className="mr-2" />
               Request Leave
             </Button>
