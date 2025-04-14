@@ -11,7 +11,8 @@ import {
   getSchedulesByTeacher,
   getLeaveRequests,
   getSubmissionsByStudent,
-  getAssignments
+  getAssignments,
+  getSchedules
 } from "@/app/actions/mock-data";
 import { Assignment, Schedule, LeaveRequest, Submission } from "@/app/types/index";
 import { CalendarIcon, BookIcon, FileTextIcon, PlusIcon } from "lucide-react";
@@ -20,10 +21,10 @@ const Dashboard = () => {
   const { user } = useAuth();
   const router = useRouter();
 
-  const [assignments, setAssignments] = useState<Assignment[]>([]);
-  const [schedules, setSchedules] = useState<Schedule[]>([]);
-  const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
-  const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const [assignments, setAssignments] = useState<any[]>([]);
+  const [schedules, setSchedules] = useState<any[]>([]);
+  const [leaveRequests, setLeaveRequests] = useState<any[]>([]);
+  const [submissions, setSubmissions] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -35,44 +36,42 @@ const Dashboard = () => {
             getSchedulesByTeacher(user.id),
             getLeaveRequests()
           ]);
-          if(teacherAssignments && teacherSchedules){
-            setAssignments(teacherAssignments.data || []);
-            setSchedules(teacherSchedules.data || []);
-
-          }
+          setAssignments(teacherAssignments.data || []);
+          setSchedules(teacherSchedules.data || []);
           // Type-safe filtering for leave requests
           setLeaveRequests(
-            allLeaveRequests.filter((lr: LeaveRequest) => 
+            allLeaveRequests.data?.filter((lr: LeaveRequest) => 
               lr.status === "PENDING"
-            )
+            ) || []
           );
         } else if (user?.role === "STUDENT") {
           const [allAssignments, allSchedules, studentSubmissions, studentLeaveRequests] = await Promise.all([
             getAssignments(),
-            getSchedulesByTeacher(""), // Get all schedules
+            getSchedules(), // Get all schedules
             getSubmissionsByStudent(user.id),
             getLeaveRequests()
           ]);
+          console.log(allSchedules);
           
           // Safe approach for filtering assignments
-            const submittedAssignmentIds: string[] = studentSubmissions
-            .map((sub: Submission): string => sub.assignmentId || "")
+            const submittedAssignmentIds: string[] = (studentSubmissions?.data || [])
+            .map((sub: any & { grade: string | null }): string => sub.assignmentId || "")
             .filter((id: string): boolean => id !== "");
           
-          const pendingAssignments = allAssignments.filter(
-            (assignment: Assignment) => 
-              assignment.id && !submittedAssignmentIds.some(id => id === assignment.id)
-          );
+          const pendingAssignments = allAssignments.data?.filter(
+            (assignment) => 
+              assignment?.id && !submittedAssignmentIds.includes(assignment.id)
+          ) || [];
           
           setAssignments(pendingAssignments);
-          setSchedules(allSchedules);
-          setSubmissions(studentSubmissions);
+          setSchedules(allSchedules.data || []);
+          setSubmissions(studentSubmissions.data || []);
           
           // Type-safe filtering for student leave requests
           setLeaveRequests(
-            studentLeaveRequests.filter((lr: LeaveRequest) => 
+            studentLeaveRequests.data?.filter((lr: LeaveRequest) => 
               lr.studentId === user.id
-            )
+            ) || []
           );
         }
       } catch (error) {
@@ -175,7 +174,7 @@ const Dashboard = () => {
             title="Schedules" 
             description="Upcoming class schedules"
           >
-            {schedules.length > 0 ? (
+            {schedules.length > 0  ? (
               <ul className="space-y-2">
                 {schedules.slice(0, 5).map((schedule) => (
                   <li key={schedule.id || 'unknown'} className="border-b border-gray-100 pb-2">
