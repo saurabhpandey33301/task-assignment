@@ -2,7 +2,7 @@
 import { prisma } from "@/app/lib/index";
 import { NextResponse } from "next/server";
 
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, { params }: { params: any }) {    // @ts-ignore
   const user = await prisma.user.findUnique({
     where: { id: params.id },
   });

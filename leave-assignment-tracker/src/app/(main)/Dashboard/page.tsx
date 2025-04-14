@@ -14,7 +14,7 @@ import {
   getAssignments,
   getSchedules
 } from "@/app/actions/mock-data";
-import { Assignment, Schedule, LeaveRequest, Submission } from "@/app/types/index";
+import {  LeaveRequest } from "@/app/types/index";
 import { CalendarIcon, BookIcon, FileTextIcon, PlusIcon } from "lucide-react";
 
 const Dashboard = () => {
