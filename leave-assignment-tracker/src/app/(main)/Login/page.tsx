@@ -6,13 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from "sonner"
 import { redirect } from "next/navigation";
 
 const Login = () => {
 
   const { login, user } = useAuth();
-  const { toast } = useToast();
+
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -27,11 +27,7 @@ const Login = () => {
     e.preventDefault();
     
     if (!email || !password) {
-      toast({
-        title: "Error",
-        description: "Please enter both email and password",
-        variant: "destructive",
-      });
+      toast.error("Please enter both email and password");
       return;
     }
     
@@ -40,6 +36,7 @@ const Login = () => {
     try {
       const success = await login(email, password);
       if (success) {
+        toast.success("login successful")
         redirect("/Dashboard");
       }
     } finally {
@@ -84,8 +81,8 @@ const Login = () => {
             </div>
             <div className="text-sm text-gray-500">
               <p>Demo accounts:</p>
-              <p>Teacher: john@example.com (any password)</p>
-              <p>Student: alice@example.com (any password)</p>
+              <p>Teacher: teacher@gmail.com (pass : 1234567)</p>
+              <p>Student: student@gmail.com (pass : 1234567)</p>
             </div>
           </CardContent>
           <CardFooter>

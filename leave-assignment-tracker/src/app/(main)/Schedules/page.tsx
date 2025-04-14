@@ -1,11 +1,10 @@
 "use client"
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/app/context/AuthContext";
-import { getSchedules, getSchedulesByTeacher } from "@/app/lib/mock-data";
-import { Schedule } from "@/app/types";
+import { getSchedules, getSchedulesByTeacher } from "@/app/actions/mock-data";
+import { ScheduleWithTeacher } from "@/app/types";
 import { PlusIcon } from "lucide-react";
 import {
   Table,
@@ -15,24 +14,28 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { redirect } from "next/navigation";
-
+import { useRouter } from "next/navigation";
 
 const Schedules = () => {
   const { user } = useAuth();
-  
-  const [schedules, setSchedules] = useState<Schedule[]>([]);
+  const router = useRouter();
+  const [schedules, setSchedules] = useState<ScheduleWithTeacher[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const loadData = async () => {
       try {
+        let result;
         if (user?.role === "TEACHER") {
-          const teacherSchedules = await getSchedulesByTeacher(user.id);
-          setSchedules(teacherSchedules);
+          result = await getSchedulesByTeacher(user.id);
         } else {
-          const allSchedules = await getSchedules();
-          setSchedules(allSchedules);
+          result = await getSchedules();
+        }
+
+        if (result.success) {
+          setSchedules(result.data ?? []);
+        } else {
+          console.error("Error loading schedules:", result.error);
         }
       } catch (error) {
         console.error("Error loading schedules:", error);
@@ -67,7 +70,7 @@ const Schedules = () => {
           <h1 className="text-2xl font-bold">Class Schedules</h1>
           
           {user?.role === "TEACHER" && (
-            <Button onClick={() => redirect("/CreateSchedule")}>
+            <Button onClick={() => router.push("/CreateSchedule")}>
               <PlusIcon size={16} className="mr-2" />
               New Schedule
             </Button>
@@ -108,7 +111,7 @@ const Schedules = () => {
               <Button 
                 variant="outline" 
                 className="mt-4"
-                onClick={() => redirect("/Schedules/create")}
+                onClick={() => router.push("/CreateSchedule")}
               >
                 Create your first schedule
               </Button>

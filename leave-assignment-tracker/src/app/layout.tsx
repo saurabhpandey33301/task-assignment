@@ -4,6 +4,9 @@ import "./globals.css";
 import { AuthProvider } from "./context/AuthContext";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Toaster } from "@/components/ui/sonner"
+
+
 const queryClient = new QueryClient();
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -36,7 +39,7 @@ export default function RootLayout({
            <div className="bg-white text-black ">
            {children}
            </div>
-
+           <Toaster />
         </AuthProvider>
         </TooltipProvider>
 

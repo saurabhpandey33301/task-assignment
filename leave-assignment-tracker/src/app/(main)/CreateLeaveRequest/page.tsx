@@ -1,21 +1,21 @@
+
 "use client"
 import { useState } from "react";
-
+import { useRouter } from "next/navigation";
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from "sonner"
 import { useAuth } from "@/app/context/AuthContext";
-import { createLeaveRequest } from "@/app/lib/mock-data";
+import { createLeaveRequest } from "@/app/actions/mock-data"; // Updated import
 import { ArrowLeftIcon } from "lucide-react";
-import { redirect } from "next/navigation";
 
 const CreateLeaveRequest = () => {
-  
+  const router = useRouter();
   const { user } = useAuth();
-  const { toast } = useToast();
+ 
   const [reason, setReason] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -25,20 +25,12 @@ const CreateLeaveRequest = () => {
     e.preventDefault();
     
     if (!reason.trim() || !startDate || !endDate) {
-      toast({
-        title: "Error",
-        description: "Please fill in all fields",
-        variant: "destructive",
-      });
+      toast.error("Please fill in all fields");
       return;
     }
     
     if (!user) {
-      toast({
-        title: "Error",
-        description: "You must be logged in to create leave requests",
-        variant: "destructive",
-      });
+      toast.error("You must be logged in to create leave requests");
       return;
     }
     
@@ -46,37 +38,31 @@ const CreateLeaveRequest = () => {
     const end = new Date(endDate);
     
     if (end < start) {
-      toast({
-        title: "Error",
-        description: "End date must be after or equal to start date",
-        variant: "destructive",
-      });
+      toast.error("End date must be after or equal to start date");
       return;
     }
     
     setIsSubmitting(true);
     
     try {
-      await createLeaveRequest({
-        reason,
-        startDate: start,
-        endDate: end,
-        studentId: user.id
-      });
+      const formData = new FormData();
+      formData.append("reason", reason);
+      formData.append("startDate", start.toISOString());
+      formData.append("endDate", end.toISOString());
+      formData.append("studentId", user.id);
+
+      const response = await createLeaveRequest(formData);
       
-      toast({
-        title: "Success",
-        description: "Leave request submitted successfully",
-      });
-      
-      redirect("/LeaveRequests");
+      if (response.success) {
+        toast.success("Leave request submitted successfully");
+        
+        router.push("/LeaveRequests");
+      } else {
+        toast.error(`${response.error || "Failed to submit leave request"}`);
+      }
     } catch (error) {
       console.error("Error creating leave request:", error);
-      toast({
-        title: "Error",
-        description: "Failed to submit leave request",
-        variant: "destructive",
-      });
+      toast.error("Failed to submit leave request");
     } finally {
       setIsSubmitting(false);
     }
@@ -88,7 +74,7 @@ const CreateLeaveRequest = () => {
         <Button 
           variant="outline" 
           size="sm" 
-          onClick={() => redirect("/LeaveRequests")}
+          onClick={() => router.push("/LeaveRequests")}
           className="mb-4"
         >
           <ArrowLeftIcon size={16} className="mr-2" />
@@ -139,7 +125,7 @@ const CreateLeaveRequest = () => {
               <Button 
                 type="button" 
                 variant="outline" 
-                onClick={() => redirect("/LeaveRequests")}
+                onClick={() => router.push("/LeaveRequests")}
                 disabled={isSubmitting}
               >
                 Cancel

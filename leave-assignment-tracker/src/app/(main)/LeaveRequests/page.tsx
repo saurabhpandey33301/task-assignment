@@ -1,11 +1,16 @@
 "use client"
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/app/context/AuthContext";
-import { getLeaveRequests, getLeaveRequestsByStudent, updateLeaveRequest } from "@/app/lib/mock-data";
-import { LeaveRequest } from "@/app/types";
+import { 
+  getLeaveRequests, 
+  getLeaveRequestsByStudent, 
+  updateLeaveRequest 
+} from "@/app/actions/mock-data"; // Updated import
+import { LeaveRequest, User } from "@/app/types";
 import { PlusIcon } from "lucide-react";
 import {
   Table,
@@ -15,28 +20,42 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useToast } from "@/components/ui/use-toast";
-import { redirect } from "next/navigation";
+import { toast } from "sonner"
+
+
+// Define a type that includes the joined student data
+interface LeaveRequestWithStudent extends LeaveRequest {
+  student?: User;
+}
 
 const LeaveRequests = () => {
+  const router = useRouter();
   const { user } = useAuth();
-
-  const { toast } = useToast();
-  const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
+  
+  const [leaveRequests, setLeaveRequests] = useState<LeaveRequestWithStudent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const loadData = async () => {
       try {
         if (user?.role === "TEACHER") {
-          const allRequests = await getLeaveRequests();
-          setLeaveRequests(allRequests);
+          const response = await getLeaveRequests();
+          if (response.success) {
+            setLeaveRequests(response.data || []);
+          } else {
+          toast.error(`${response.error || "Failed to load leave requests"}`);
+          }
         } else if (user?.role === "STUDENT") {
-          const studentRequests = await getLeaveRequestsByStudent(user.id);
-          setLeaveRequests(studentRequests);
+          const response = await getLeaveRequestsByStudent(user.id);
+          if (response.success) {
+            setLeaveRequests(response.data || []);
+          } else {
+            toast(`${response.error || "Failed to load leave requests"}`);
+          }
         }
       } catch (error) {
         console.error("Error loading leave requests:", error);
+        toast.error("Failed to load leave requests");
       } finally {
         setIsLoading(false);
       }
@@ -44,35 +63,38 @@ const LeaveRequests = () => {
 
     if (user) {
       loadData();
+    } else {
+      setIsLoading(false);
     }
-  }, [user]);
+  }, [user, toast]);
 
   const handleUpdateStatus = async (id: string, status: "APPROVED" | "REJECTED") => {
     try {
-      await updateLeaveRequest(id, { status });
+      const formData = new FormData();
+      formData.append("id", id);
+      formData.append("status", status);
       
-      toast({
-        title: "Success",
-        description: `Leave request ${status.toLowerCase()}`,
-      });
+      const response = await updateLeaveRequest(formData);
       
-      // Update the local state
-      setLeaveRequests(prev => 
-        prev.map(request => 
-          request.id === id ? { ...request, status } : request
-        )
-      );
+      if (response.success) {
+        toast.success("Success");
+        
+        // Update the local state
+        setLeaveRequests(prev => 
+          prev.map(request => 
+            request.id === id ? { ...request, status } : request
+          )
+        );
+      } else {
+        toast.error(`${response.error || "Failed to update leave request"}`);
+      }
     } catch (error) {
       console.error("Error updating leave request:", error);
-      toast({
-        title: "Error",
-        description: "Failed to update leave request",
-        variant: "destructive",
-      });
+      toast.error( "Failed to update leave request");
     }
   };
 
-  const formatDate = (date: Date) => {
+  const formatDate = (date: Date | string) => {
     return new Date(date).toLocaleDateString();
   };
 
@@ -86,6 +108,20 @@ const LeaveRequests = () => {
     );
   }
 
+  // If user is not logged in, show message and redirect options
+  if (!user) {
+    return (
+      <Layout>
+        <div className="text-center py-10">
+          <h2 className="text-xl font-semibold mb-4">You need to log in to view leave requests</h2>
+          <Button onClick={() => router.push("/login")}>
+            Go to Login
+          </Button>
+        </div>
+      </Layout>
+    );
+  }
+
   return (
     <Layout>
       <div className="space-y-6">
@@ -93,7 +129,7 @@ const LeaveRequests = () => {
           <h1 className="text-2xl font-bold">Leave Requests</h1>
           
           {user?.role === "STUDENT" && (
-            <Button onClick={() => redirect("/CreateLeaveRequest")}>
+            <Button onClick={() => router.push("/CreateLeaveRequest")}>
               <PlusIcon size={16} className="mr-2" />
               New Leave Request
             </Button>
@@ -171,7 +207,7 @@ const LeaveRequests = () => {
               <Button 
                 variant="outline" 
                 className="mt-4"
-                onClick={() => redirect("/CreateLeaveRequest")}
+                onClick={() => router.push("/CreateLeaveRequest")}
               >
                 Create your first leave request
               </Button>

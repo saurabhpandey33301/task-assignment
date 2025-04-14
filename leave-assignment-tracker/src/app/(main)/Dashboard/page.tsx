@@ -1,5 +1,6 @@
 "use client"
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import Layout from "@/components/Layout";
 import DashboardCard from "@/components/DashboardCard";
@@ -11,13 +12,13 @@ import {
   getLeaveRequests,
   getSubmissionsByStudent,
   getAssignments
-} from "@/app/lib/mock-data";
+} from "@/app/actions/mock-data";
 import { Assignment, Schedule, LeaveRequest, Submission } from "@/app/types/index";
 import { CalendarIcon, BookIcon, FileTextIcon, PlusIcon } from "lucide-react";
-import { redirect } from "next/navigation";
 
 const Dashboard = () => {
   const { user } = useAuth();
+  const router = useRouter();
 
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [schedules, setSchedules] = useState<Schedule[]>([]);
@@ -34,9 +35,17 @@ const Dashboard = () => {
             getSchedulesByTeacher(user.id),
             getLeaveRequests()
           ]);
-          setAssignments(teacherAssignments);
-          setSchedules(teacherSchedules);
-          setLeaveRequests(allLeaveRequests.filter(lr => lr.status === "PENDING"));
+          if(teacherAssignments && teacherSchedules){
+            setAssignments(teacherAssignments.data || []);
+            setSchedules(teacherSchedules.data || []);
+
+          }
+          // Type-safe filtering for leave requests
+          setLeaveRequests(
+            allLeaveRequests.filter((lr: LeaveRequest) => 
+              lr.status === "PENDING"
+            )
+          );
         } else if (user?.role === "STUDENT") {
           const [allAssignments, allSchedules, studentSubmissions, studentLeaveRequests] = await Promise.all([
             getAssignments(),
@@ -45,16 +54,26 @@ const Dashboard = () => {
             getLeaveRequests()
           ]);
           
-          // Filter out assignments that have already been submitted
-          const submittedAssignmentIds = studentSubmissions.map(sub => sub.assignmentId);
+          // Safe approach for filtering assignments
+            const submittedAssignmentIds: string[] = studentSubmissions
+            .map((sub: Submission): string => sub.assignmentId || "")
+            .filter((id: string): boolean => id !== "");
+          
           const pendingAssignments = allAssignments.filter(
-            assignment => !submittedAssignmentIds.includes(assignment.id)
+            (assignment: Assignment) => 
+              assignment.id && !submittedAssignmentIds.some(id => id === assignment.id)
           );
           
           setAssignments(pendingAssignments);
           setSchedules(allSchedules);
           setSubmissions(studentSubmissions);
-          setLeaveRequests(studentLeaveRequests.filter(lr => lr.studentId === user.id));
+          
+          // Type-safe filtering for student leave requests
+          setLeaveRequests(
+            studentLeaveRequests.filter((lr: LeaveRequest) => 
+              lr.studentId === user.id
+            )
+          );
         }
       } catch (error) {
         console.error("Error loading dashboard data:", error);
@@ -78,8 +97,13 @@ const Dashboard = () => {
     );
   }
 
-  const formatDate = (date: Date) => {
+  const formatDate = (date: Date | string | undefined) => {
+    if (!date) return "N/A";
     return new Date(date).toLocaleDateString();
+  };
+
+  const navigateTo = (path: string) => {
+    router.push(path);
   };
 
   return (
@@ -90,11 +114,11 @@ const Dashboard = () => {
           
           {user?.role === "TEACHER" && (
             <div className="flex gap-2">
-              <Button onClick={() => redirect("/Assignments/create")}>
+              <Button onClick={() => navigateTo("/CreateAssignment")}>
                 <PlusIcon size={16} className="mr-2" />
                 New Assignment
               </Button>
-              <Button onClick={() => redirect("/Schedules/create")}>
+              <Button onClick={() => navigateTo("/CreateSchedule")}>
                 <PlusIcon size={16} className="mr-2" />
                 New Schedule
               </Button>
@@ -102,7 +126,7 @@ const Dashboard = () => {
           )}
           
           {user?.role === "STUDENT" && (
-            <Button className=""  onClick={() => redirect("CreateLeaveRequest")}>
+            <Button onClick={() => navigateTo("/CreateLeaveRequest")}>
               <PlusIcon size={16} className="mr-2" />
               Request Leave
             </Button>
@@ -117,14 +141,18 @@ const Dashboard = () => {
             {assignments.length > 0 ? (
               <ul className="space-y-2">
                 {assignments.slice(0, 5).map((assignment) => (
-                  <li key={assignment.id} className="border-b border-gray-100 pb-2">
+                  <li key={assignment.id || 'unknown'} className="border-b border-gray-100 pb-2">
                     <a 
-                      href={`/assignments/${assignment.id}`}
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        navigateTo(`/assignments/${assignment.id || ''}`);
+                      }}
                       className="flex justify-between items-center hover:bg-gray-50 p-2 rounded"
                     >
                       <div className="flex items-center gap-2">
                         <BookIcon size={16} className="text-app-blue" />
-                        <span>{assignment.title}</span>
+                        <span>{assignment.title || 'Untitled'}</span>
                       </div>
                       <span className="text-sm text-gray-500">
                         Due: {formatDate(assignment.dueDate)}
@@ -137,7 +165,7 @@ const Dashboard = () => {
               <p className="text-gray-500 text-center py-4">No assignments found</p>
             )}
             <div className="mt-4">
-              <Button variant="outline" className="w-full" onClick={() => redirect("/Assignments")}>
+              <Button variant="outline" className="w-full" onClick={() => navigateTo("/Assignments")}>
                 View All
               </Button>
             </div>
@@ -150,14 +178,14 @@ const Dashboard = () => {
             {schedules.length > 0 ? (
               <ul className="space-y-2">
                 {schedules.slice(0, 5).map((schedule) => (
-                  <li key={schedule.id} className="border-b border-gray-100 pb-2">
+                  <li key={schedule.id || 'unknown'} className="border-b border-gray-100 pb-2">
                     <div className="flex justify-between items-center p-2 hover:bg-gray-50 rounded">
                       <div className="flex items-center gap-2">
                         <CalendarIcon size={16} className="text-app-blue" />
-                        <span>{schedule.title}</span>
+                        <span>{schedule.title || 'Untitled'}</span>
                       </div>
                       <span className="text-sm text-gray-500">
-                        {new Date(schedule.startTime).toLocaleString()}
+                        {schedule.startTime ? new Date(schedule.startTime).toLocaleString() : 'TBD'}
                       </span>
                     </div>
                   </li>
@@ -167,7 +195,7 @@ const Dashboard = () => {
               <p className="text-gray-500 text-center py-4">No schedules found</p>
             )}
             <div className="mt-4">
-              <Button variant="outline" className="w-full" onClick={() => redirect("/Schedules")}>
+              <Button variant="outline" className="w-full" onClick={() => navigateTo("/Schedules")}>
                 View All
               </Button>
             </div>
@@ -181,11 +209,14 @@ const Dashboard = () => {
               {leaveRequests.length > 0 ? (
                 <ul className="space-y-2">
                   {leaveRequests.slice(0, 5).map((request) => (
-                    <li key={request.id} className="border-b border-gray-100 pb-2">
-                      <div className="flex justify-between items-center p-2 hover:bg-gray-50 rounded">
+                    <li key={request.id || 'unknown'} className="border-b border-gray-100 pb-2">
+                      <div 
+                        className="flex justify-between items-center p-2 hover:bg-gray-50 rounded cursor-pointer"
+                        onClick={() => navigateTo(`/leaveRequests/${request.id || ''}`)}
+                      >
                         <div className="flex items-center gap-2">
                           <FileTextIcon size={16} className="text-app-blue" />
-                          <span>{request.student?.name}</span>
+                          <span>{request.student?.name || 'Unknown Student'}</span>
                         </div>
                         <span className="text-sm text-gray-500">
                           {formatDate(request.startDate)} - {formatDate(request.endDate)}
@@ -198,7 +229,7 @@ const Dashboard = () => {
                 <p className="text-gray-500 text-center py-4">No pending leave requests</p>
               )}
               <div className="mt-4">
-                <Button variant="outline" className="w-full" onClick={() => redirect("/LeaveRequests")}>
+                <Button variant="outline" className="w-full" onClick={() => navigateTo("/LeaveRequests")}>
                   View All
                 </Button>
               </div>
@@ -213,11 +244,14 @@ const Dashboard = () => {
               {submissions.length > 0 ? (
                 <ul className="space-y-2">
                   {submissions.slice(0, 5).map((submission) => (
-                    <li key={submission.id} className="border-b border-gray-100 pb-2">
-                      <div className="flex justify-between items-center p-2 hover:bg-gray-50 rounded">
+                    <li key={submission.id || 'unknown'} className="border-b border-gray-100 pb-2">
+                      <div 
+                        className="flex justify-between items-center p-2 hover:bg-gray-50 rounded cursor-pointer"
+                        onClick={() => navigateTo(`/submissions/${submission.id || ''}`)}
+                      >
                         <div className="flex items-center gap-2">
                           <BookIcon size={16} className="text-app-blue" />
-                          <span>{submission.assignment?.title}</span>
+                          <span>{submission.assignment?.title || 'Unknown Assignment'}</span>
                         </div>
                         <span className={`text-sm ${submission.grade ? 'text-green-500 font-medium' : 'text-gray-500'}`}>
                           {submission.grade ? `Grade: ${submission.grade}` : 'Pending review'}
@@ -230,7 +264,7 @@ const Dashboard = () => {
                 <p className="text-gray-500 text-center py-4">No submissions found</p>
               )}
               <div className="mt-4">
-                <Button variant="outline" className="w-full" onClick={() => redirect("/Assignments")}>
+                <Button variant="outline" className="w-full" onClick={() => navigateTo("/Assignments")}>
                   View Assignments
                 </Button>
               </div>
@@ -245,16 +279,21 @@ const Dashboard = () => {
               {leaveRequests.length > 0 ? (
                 <ul className="space-y-2">
                   {leaveRequests.slice(0, 5).map((request) => (
-                    <li key={request.id} className="border-b border-gray-100 pb-2">
-                      <div className="flex justify-between items-center p-2 hover:bg-gray-50 rounded">
+                    <li key={request.id || 'unknown'} className="border-b border-gray-100 pb-2">
+                      <div 
+                        className="flex justify-between items-center p-2 hover:bg-gray-50 rounded cursor-pointer"
+                        onClick={() => navigateTo(`/leaveRequests/${request.id || ''}`)}
+                      >
                         <div className="flex items-center gap-2">
                           <FileTextIcon size={16} className="text-app-blue" />
-                          <span>{request.reason.substring(0, 30)}{request.reason.length > 30 ? '...' : ''}</span>
+                          <span>{request.reason ? 
+                            (request.reason.substring(0, 30) + (request.reason.length > 30 ? '...' : '')) : 
+                            'No reason provided'}</span>
                         </div>
                         <span className={`text-sm font-medium
                           ${request.status === 'APPROVED' ? 'text-green-500' : 
                             request.status === 'REJECTED' ? 'text-red-500' : 'text-yellow-500'}`}>
-                          {request.status}
+                          {request.status || 'PENDING'}
                         </span>
                       </div>
                     </li>
@@ -264,7 +303,7 @@ const Dashboard = () => {
                 <p className="text-gray-500 text-center py-4">No leave requests found</p>
               )}
               <div className="mt-4">
-                <Button variant="outline" className="w-full" onClick={() => redirect("/LeaveRequests")}>
+                <Button variant="outline" className="w-full" onClick={() => navigateTo("/LeaveRequests")}>
                   View All
                 </Button>
               </div>
