@@ -145,7 +145,7 @@ const Dashboard = () => {
                       href="#"
                       onClick={(e) => {
                         e.preventDefault();
-                        navigateTo(`/assignments/${assignment.id || ''}`);
+                        navigateTo(`/AssignmentDetail/${assignment.id || ''}`);
                       }}
                       className="flex justify-between items-center hover:bg-gray-50 p-2 rounded"
                     >
@@ -211,7 +211,7 @@ const Dashboard = () => {
                     <li key={request.id || 'unknown'} className="border-b border-gray-100 pb-2">
                       <div 
                         className="flex justify-between items-center p-2 hover:bg-gray-50 rounded cursor-pointer"
-                        onClick={() => navigateTo(`/leaveRequests/${request.id || ''}`)}
+                        onClick={() => navigateTo(`/LeaveRequests`)}
                       >
                         <div className="flex items-center gap-2">
                           <FileTextIcon size={16} className="text-app-blue" />
@@ -246,7 +246,7 @@ const Dashboard = () => {
                     <li key={submission.id || 'unknown'} className="border-b border-gray-100 pb-2">
                       <div 
                         className="flex justify-between items-center p-2 hover:bg-gray-50 rounded cursor-pointer"
-                        onClick={() => navigateTo(`/submissions/${submission.id || ''}`)}
+                        onClick={() => navigateTo(`/Assignments`)}
                       >
                         <div className="flex items-center gap-2">
                           <BookIcon size={16} className="text-app-blue" />
@@ -281,7 +281,7 @@ const Dashboard = () => {
                     <li key={request.id || 'unknown'} className="border-b border-gray-100 pb-2">
                       <div 
                         className="flex justify-between items-center p-2 hover:bg-gray-50 rounded cursor-pointer"
-                        onClick={() => navigateTo(`/leaveRequests/${request.id || ''}`)}
+                        onClick={() => navigateTo(`/LeaveRequests`)}
                       >
                         <div className="flex items-center gap-2">
                           <FileTextIcon size={16} className="text-app-blue" />

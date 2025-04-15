@@ -18,11 +18,11 @@ const ProtectedRoute = ({ children, roles }: ProtectedRouteProps) => {
   }
 
   if (!user) {
-    return <Navigate to="/login" />;
+    return <Navigate to="/Login" />;
   }
 
   if (roles && !roles.includes(user.role)) {
-    return <Navigate to="/dashboard" />;
+    return <Navigate to="/Dashboard" />;
   }
 
   return <>{children}</>;
