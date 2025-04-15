@@ -14,7 +14,7 @@ import {
   createSubmission,
   updateSubmission,
 } from "@/app/actions/mock-data";
-import { Assignment, Submission } from "@/app/types";
+
 import { ArrowLeftIcon } from "lucide-react";
 import {
   Table,

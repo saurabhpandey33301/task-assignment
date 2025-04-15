@@ -2,7 +2,6 @@
 import {prisma} from "@/app/lib/index"
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import bcrypt from "bcryptjs";
 
 // Mock service functions
 
@@ -41,134 +40,6 @@ export async function getUserById(id: string) {
   }
 }
 
-export async function getTeachers() {
-  try {
-    const teachers = await prisma.user.findMany({
-      where: { role: "TEACHER" }
-    });
-    return { success: true, data: teachers };
-  } catch (error) {
-    return { success: false, error: "Failed to fetch teachers" };
-  }
-}
-
-export async function getStudents() {
-  try {
-    const students = await prisma.user.findMany({
-      where: { role: "STUDENT" }
-    });
-    return { success: true, data: students };
-  } catch (error) {
-    return { success: false, error: "Failed to fetch students" };
-  }
-}
-
-export async function createUser(formData: FormData) {
-  const schema = z.object({
-    name: z.string().min(1, "Name is required"),
-    email: z.string().email("Invalid email address"),
-    password: z.string().min(6, "Password must be at least 6 characters"),
-    role: z.enum(["TEACHER", "STUDENT"])
-  });
-
-  try {
-    const { name, email, password, role } = schema.parse({
-      name: formData.get("name"),
-      email: formData.get("email"),
-      password: formData.get("password"),
-      role: formData.get("role")
-    });
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const existingUser = await prisma.user.findUnique({
-      where: { email }
-    });
-
-    if (existingUser) {
-      return { success: false, error: "Email already exists" };
-    }
-
-    const user = await prisma.user.create({
-      data: {
-        name,
-        email,
-        password: hashedPassword,
-        role
-      }
-    });
-
-    revalidatePath("/users");
-    return { success: true, data: user };
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return { success: false, error: error.errors[0].message };
-    }
-    return { success: false, error: "Failed to create user" };
-  }
-}
-
-export async function updateUser(formData: FormData) {
-  const schema = z.object({
-    id: z.string().min(1, "ID is required"),
-    name: z.string().min(1, "Name is required"),
-    email: z.string().email("Invalid email address"),
-    role: z.enum(["TEACHER", "STUDENT"])
-  });
-
-  try {
-    const { id, name, email, role } = schema.parse({
-      id: formData.get("id"),
-      name: formData.get("name"),
-      email: formData.get("email"),
-      role: formData.get("role")
-    });
-
-    const password = formData.get("password") as string;
-    
-    const data: any = {
-      name,
-      email,
-      role
-    };
-
-    if (password && password.length >= 6) {
-      data.password = await bcrypt.hash(password, 10);
-    }
-
-    const user = await prisma.user.update({
-      where: { id },
-      data
-    });
-
-    revalidatePath("/users");
-    return { success: true, data: user };
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return { success: false, error: error.errors[0].message };
-    }
-    return { success: false, error: "Failed to update user" };
-  }
-}
-
-export async function deleteUser(formData: FormData) {
-  const id = formData.get("id") as string;
-
-  try {
-    await prisma.user.delete({
-      where: { id }
-    });
-
-    revalidatePath("/users");
-    return { success: true };
-  } catch (error) {
-    return { success: false, error: "Failed to delete user" };
-  }
-}
-
-// ASSIGNMENT ACTIONS
-
-
 
 export async function createAssignment(formData: FormData) {
   const schema = z.object({
@@ -205,55 +76,6 @@ export async function createAssignment(formData: FormData) {
   }
 }
 
-export async function updateAssignment(formData: FormData) {
-  const schema = z.object({
-    id: z.string().min(1, "ID is required"),
-    title: z.string().min(1, "Title is required"),
-    description: z.string().min(1, "Description is required"),
-    dueDate: z.string().min(1, "Due date is required")
-  });
-
-  try {
-    const { id, title, description, dueDate } = schema.parse({
-      id: formData.get("id"),
-      title: formData.get("title"),
-      description: formData.get("description"),
-      dueDate: formData.get("dueDate")
-    });
-
-    const assignment = await prisma.assignment.update({
-      where: { id },
-      data: {
-        title,
-        description,
-        dueDate: new Date(dueDate)
-      }
-    });
-
-    revalidatePath("/Assignments");
-    return { success: true, data: assignment };
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return { success: false, error: error.errors[0].message };
-    }
-    return { success: false, error: "Failed to update assignment" };
-  }
-}
-
-export async function deleteAssignment(formData: FormData) {
-  const id = formData.get("id") as string;
-
-  try {
-    await prisma.assignment.delete({
-      where: { id }
-    });
-
-    revalidatePath("/Assignments");
-    return { success: true };
-  } catch (error) {
-    return { success: false, error: "Failed to delete assignment" };
-  }
-}
 
 // SOLUTION (SUBMISSION) ACTIONS
 
@@ -316,140 +138,6 @@ export async function getSubmissionsByStudent(studentId: string) {
   }
 }
 
-export async function getSolutions() {
-  try {
-    const solutions = await prisma.solution.findMany({
-      include: {
-        student: true,
-        assignment: true
-      }
-    });
-    return { success: true, data: solutions };
-  } catch (error) {
-    return { success: false, error: "Failed to fetch solutions" };
-  }
-}
-
-export async function getSolutionById(id: string) {
-  try {
-    const solution = await prisma.solution.findUnique({
-      where: { id },
-      include: {
-        student: true,
-        assignment: true
-      }
-    });
-    return { success: true, data: solution };
-  } catch (error) {
-    return { success: false, error: "Failed to fetch solution" };
-  }
-}
-
-export async function getSolutionsByAssignment(assignmentId: string) {
-  try {
-    const solutions = await prisma.solution.findMany({
-      where: { assignmentId },
-      include: {
-        student: true,
-        assignment: true
-      }
-    });
-    return { success: true, data: solutions };
-  } catch (error) {
-    return { success: false, error: "Failed to fetch solutions" };
-  }
-}
-
-export async function getSolutionsByStudent(studentId: string) {
-  try {
-    const solutions = await prisma.solution.findMany({
-      where: { studentId },
-      include: {
-        student: true,
-        assignment: true
-      }
-    });
-    return { success: true, data: solutions };
-  } catch (error) {
-    return { success: false, error: "Failed to fetch solutions" };
-  }
-}
-
-export async function createSolution(formData: FormData) {
-  const schema = z.object({
-    content: z.string().min(1, "Content is required"),
-    studentId: z.string().min(1, "Student ID is required"),
-    assignmentId: z.string().min(1, "Assignment ID is required")
-  });
-
-  try {
-    const { content, studentId, assignmentId } = schema.parse({
-      content: formData.get("content"),
-      studentId: formData.get("studentId"),
-      assignmentId: formData.get("assignmentId")
-    });
-
-    const solution = await prisma.solution.create({
-      data: {
-        content,
-        studentId,
-        assignmentId
-      }
-    });
-
-    revalidatePath("/assignments");
-    return { success: true, data: solution };
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return { success: false, error: error.errors[0].message };
-    }
-    return { success: false, error: "Failed to create solution" };
-  }
-}
-
-export async function updateSolution(formData: FormData) {
-  const schema = z.object({
-    id: z.string().min(1, "ID is required"),
-    content: z.string().min(1, "Content is required")
-  });
-
-  try {
-    const { id, content } = schema.parse({
-      id: formData.get("id"),
-      content: formData.get("content")
-    });
-
-    const solution = await prisma.solution.update({
-      where: { id },
-      data: {
-        content
-      }
-    });
-
-    revalidatePath("/Assignments");
-    return { success: true, data: solution };
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return { success: false, error: error.errors[0].message };
-    }
-    return { success: false, error: "Failed to update solution" };
-  }
-}
-
-export async function deleteSolution(formData: FormData) {
-  const id = formData.get("id") as string;
-
-  try {
-    await prisma.solution.delete({
-      where: { id }
-    });
-
-    revalidatePath("/Assignments");
-    return { success: true };
-  } catch (error) {
-    return { success: false, error: "Failed to delete solution" };
-  }
-}
 
 // LEAVE REQUEST ACTIONS
 export async function getLeaveRequests() {
@@ -558,20 +246,7 @@ export async function updateLeaveRequest(formData: FormData) {
   }
 }
 
-export async function deleteLeaveRequest(formData: FormData) {
-  const id = formData.get("id") as string;
 
-  try {
-    await prisma.leaveRequest.delete({
-      where: { id }
-    });
-
-    revalidatePath("/LeaveRequests");
-    return { success: true };
-  } catch (error) {
-    return { success: false, error: "Failed to delete leave request" };
-  }
-}
 
 
 // SCHEDULE ACTIONS
@@ -702,20 +377,7 @@ export async function updateSchedule(formData: FormData) {
   }
 }
 
-export async function deleteSchedule(formData: FormData) {
-  const id = formData.get("id") as string;
 
-  try {
-    await prisma.schedule.delete({
-      where: { id }
-    });
-
-    revalidatePath("/Schedules");
-    return { success: true };
-  } catch (error) {
-    return { success: false, error: "Failed to delete schedule" };
-  }
-}
 
 
 

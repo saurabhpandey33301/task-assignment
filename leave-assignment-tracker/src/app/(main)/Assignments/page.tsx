@@ -165,7 +165,7 @@ import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/app/context/AuthContext";
 import { getAssignments, getAssignmentsByTeacher, getSubmissionsByStudent } from "@/app/actions/mock-data";
-import { Assignment, Submission } from "@/app/types";
+
 import { PlusIcon } from "lucide-react";
 import {
   Table,

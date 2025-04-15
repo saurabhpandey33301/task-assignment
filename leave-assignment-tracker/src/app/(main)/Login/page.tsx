@@ -72,7 +72,7 @@ const Login = () => {
               <Input
                 id="password"
                 type="password"
-                placeholder="Enter your password"
+                placeholder="Enter your Registration Number"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={isLoading}
