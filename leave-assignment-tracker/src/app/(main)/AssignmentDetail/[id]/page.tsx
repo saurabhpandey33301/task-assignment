@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/components/ui/use-toast";
+import {toast} from "sonner"
 import { useAuth } from "@/app/context/AuthContext";
 import {
   getAssignmentById,
@@ -29,7 +29,7 @@ const AssignmentDetail = () => {
   const router = useRouter();
   const { id } = useParams();
   const { user } = useAuth();
-  const { toast } = useToast();
+
   const [assignment, setAssignment] = useState<any| null>(null);
   const [submissions, setSubmissions] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -90,11 +90,7 @@ const AssignmentDetail = () => {
         }
       } catch (error) {
         console.error("Error loading assignment:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load assignment details",
-          variant: "destructive",
-        });
+        toast.error("Failed to load assignment details");
       } finally {
         setIsLoading(false);
       }
@@ -106,11 +102,7 @@ const AssignmentDetail = () => {
   const handleSubmit = async () => {
     try {
       if (!id || !user || !submissionContent.trim()) {
-        toast({
-          title: "Error",
-          description: "Please provide submission content",
-          variant: "destructive",
-        });
+        toast.error("Please provide submission content");
         return;
       }
 
@@ -122,21 +114,14 @@ const AssignmentDetail = () => {
       const result = await createSubmission(formData);
 
       if (result?.success) {
-        toast({
-          title: "Success",
-          description: "Assignment submitted successfully",
-        });
+        toast.success("Assignment submitted successfully");
         router.push("/Assignments");
       } else {
         throw new Error(result?.error || "Failed to submit assignment");
       }
     } catch (error) {
       console.error("Error submitting assignment:", error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to submit assignment",
-        variant: "destructive",
-      });
+      toast.error(`${error instanceof Error ? error.message : "Failed to submit assignment"}`);
     }
   };
 
@@ -146,11 +131,7 @@ const AssignmentDetail = () => {
       const feedback = feedbackValue[submissionId];
 
       if (!grade?.trim()) {
-        toast({
-          title: "Error",
-          description: "Please provide a grade",
-          variant: "destructive",
-        });
+        toast.error("Please provide a grade");
         return;
       }
 
@@ -161,10 +142,7 @@ const AssignmentDetail = () => {
       const result = await updateSubmission(submissionId, formData);
 
       if (result?.success) {
-        toast({
-          title: "Success",
-          description: "Submission graded successfully",
-        });
+        toast.success("Submission graded successfully");
 
         const submissionsResult = await getSubmissionsByAssignment(id as string);
         if (submissionsResult.success) {
@@ -180,11 +158,7 @@ const AssignmentDetail = () => {
       }
     } catch (error) {
       console.error("Error grading submission:", error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to grade submission",
-        variant: "destructive",
-      });
+      toast.error(`${error instanceof Error ? error.message : "Failed to grade submission"}`);
     }
   };
 
@@ -240,7 +214,7 @@ const AssignmentDetail = () => {
               <div className="space-y-4">
                 <div>
                   <Label>Your Work</Label>
-                  <div className="mt-1 p-3 border rounded bg-gray-50">{studentSubmission.content}</div>
+                  <div className="mt-1 p-3 border rounded bg-gray-50"><a href={studentSubmission.content} target="_blank">{studentSubmission.content}</a></div>
                 </div>
 
                 {studentSubmission.grade && (
@@ -305,7 +279,7 @@ const AssignmentDetail = () => {
                         <TableCell className="font-medium">
                           {submission.student?.name || "Unknown Student"}
                         </TableCell>
-                        <TableCell className="max-w-xs truncate">{submission.content}</TableCell>
+                        <TableCell className="max-w-xs truncate"><a href={submission.content} target="_blank">{submission.content}</a></TableCell>
                         <TableCell>{formatDate(submission.submittedAt)}</TableCell>
                         <TableCell>
                           <Input
