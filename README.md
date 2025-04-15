@@ -4,35 +4,35 @@
 
 
 
--  Submit and review leave applications
+-  Submit and review leave applications.
 
-- Approval system for faculty/admins
+- Approval system for faculty/admins.
 
-- Track leave history
+- Track leave history.
 
 ---
 
 ### 📚 Assignment Tracker
 
-- Create, assign, and manage assignments
+- Create, assign, and manage assignments.
 
-- Deadline notifications and status updates
+- Deadline notifications and status updates.
 
-- Student-wise submission tracking
+- Student-wise submission tracking.
 
 ---
 
 ### 👥 User Roles
 
-- Student, Faculty, and Admin access control
+- Student & faculty access control.
 
-- Personalized dashboards based on user role
+- Personalized dashboards based on user role.
 
 ---
 
 ### 📊 Dashboard & Analytics
 
-- Overview of pending tasks and upcoming deadlines
+- Overview of pending tasks and upcoming deadlines.
 
 - Leave and assignment pending and submitted/approved status.
 
