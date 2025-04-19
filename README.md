@@ -24,9 +24,9 @@
 
 ### 👥 User Roles
 
-- Student & faculty access control.
+- Student & faculty access control
 
-- Personalized dashboards based on user role.
+- Personalized dashboards based on user role
 
 ---
 
